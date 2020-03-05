@@ -25,9 +25,13 @@ import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
 
+import androidx.lifecycle.Observer;
+import androidx.lifecycle.ViewModelProvider;
+
 import de.dennisguse.opentracks.content.data.Waypoint;
 import de.dennisguse.opentracks.content.provider.ContentProviderUtils;
 import de.dennisguse.opentracks.services.TrackRecordingServiceConnection;
+import de.dennisguse.opentracks.viewModel.MarkerEditViewModel;
 
 /**
  * An activity to add/edit a marker.
@@ -50,11 +54,13 @@ public class MarkerEditActivity extends AbstractActivity {
     private AutoCompleteTextView waypointMarkerType;
     private EditText waypointDescription;
     private Button done;
+    private MarkerEditViewModel viewModel;
 
     @Override
     protected void onCreate(Bundle bundle) {
         super.onCreate(bundle);
 
+        viewModel = new ViewModelProvider(this).get(MarkerEditViewModel.class);
         trackId = getIntent().getLongExtra(EXTRA_TRACK_ID, -1L);
         markerId = getIntent().getLongExtra(EXTRA_MARKER_ID, -1L);
         trackRecordingServiceConnection = new TrackRecordingServiceConnection(this, null);
@@ -66,6 +72,26 @@ public class MarkerEditActivity extends AbstractActivity {
         waypointMarkerType.setAdapter(adapter);
         waypointDescription = findViewById(R.id.marker_edit_waypoint_description);
 
+        viewModel.getWaypointNameText().observe(this, new Observer<String>() {
+            @Override
+            public void onChanged(String s) {
+                waypointName.setText(s);
+            }
+        });
+
+        viewModel.getWaypointMarkerTypeText().observe(this, new Observer<String>() {
+            @Override
+            public void onChanged(String s) {
+                waypointMarkerType.setText(s);
+            }
+        });
+
+        viewModel.getWaypointDescriptionText().observe(this, new Observer<String>() {
+            @Override
+            public void onChanged(String s) {
+                waypointDescription.setText(s);
+            }
+        });
         Button cancel = findViewById(R.id.marker_edit_cancel);
         cancel.setOnClickListener(new OnClickListener() {
             @Override
@@ -119,10 +145,13 @@ public class MarkerEditActivity extends AbstractActivity {
             if (nextWaypointNumber == -1) {
                 nextWaypointNumber = 0;
             }
-            waypointName.setText(getString(R.string.marker_name_format, nextWaypointNumber));
+            viewModel.getWaypointNameText().setValue((getString(R.string.marker_name_format, nextWaypointNumber)));
+            //waypointName.setText(getString(R.string.marker_name_format, nextWaypointNumber));
             waypointName.selectAll();
-            waypointMarkerType.setText("");
-            waypointDescription.setText("");
+            viewModel.getWaypointMarkerTypeText().setValue("");
+            //waypointMarkerType.setText("");
+            viewModel.getWaypointDescriptionText().setValue("");
+            //waypointDescription.setText("");
         } else {
             waypoint = new ContentProviderUtils(this).getWaypoint(markerId);
             if (waypoint == null) {
@@ -130,9 +159,12 @@ public class MarkerEditActivity extends AbstractActivity {
                 finish();
                 return;
             }
-            waypointName.setText(waypoint.getName());
-            waypointMarkerType.setText(waypoint.getCategory());
-            waypointDescription.setText(waypoint.getDescription());
+            viewModel.getWaypointNameText().setValue(waypoint.getName());
+            //waypointName.setText(waypoint.getName());
+            viewModel.getWaypointMarkerTypeText().setValue(waypoint.getCategory());
+            //waypointMarkerType.setText(waypoint.getCategory());
+            viewModel.getWaypointDescriptionText().setValue(waypoint.getDescription());
+            //waypointDescription.setText(waypoint.getDescription());
         }
     }
 
